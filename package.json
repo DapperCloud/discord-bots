@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Les bots certifiés LPB©",
   "dependencies": {
-    "discord.js": "^11.3.0"
+    "discord.js": "^11.3.0",
+    "jquery": "^3.3.1",
+    "jsdom": "^11.6.1",
+    "opusscript": "0.0.6",
+    "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {},
   "repository": {
