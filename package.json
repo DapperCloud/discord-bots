@@ -1,0 +1,19 @@
+{
+  "name": "discord-bots",
+  "version": "1.0.0",
+  "description": "Les bots certifiés LPB©",
+  "dependencies": {
+    "discord.js": "^11.3.0"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DapperCloud/discord-bots.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DapperCloud/discord-bots/issues"
+  },
+  "homepage": "https://github.com/DapperCloud/discord-bots#readme"
+}
