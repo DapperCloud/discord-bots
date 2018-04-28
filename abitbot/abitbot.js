@@ -2,6 +2,12 @@
 
 const Discord = require('discord.js');
 const client = new Discord.Client();
+var fs = require("fs");
+
+console.log("Parsing des credentials...");
+var contents = fs.readFileSync("mdp.json");
+var passJson = JSON.parse(contents);
+console.log("OK !");
 
 console.log("Parsing des credentials...");
 var contents = fs.readFileSync("mdp.json");

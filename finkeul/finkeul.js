@@ -2,6 +2,7 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const stream = require('stream');
+var fs = require("fs");
 
 var voiceConnection;
 var voiceChannel;
