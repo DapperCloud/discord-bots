@@ -3,6 +3,11 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
 
+console.log("Parsing des credentials...");
+var contents = fs.readFileSync("mdp.json");
+var passJson = JSON.parse(contents);
+console.log("OK !");
+
 function writeObj(obj, message) {
   if (!message) { message = obj; }
   var details = "*****************" + "\n" + message + "\n";
@@ -65,4 +70,4 @@ client.on('message', message => {
 	}
 });
 
-client.login('Mzg3NTQ5ODM3ODY5OTczNTA1.DQghvw.sXF12c5re5RXZUNGT2UHFUgO9-I');
+client.login(passJson.pass);

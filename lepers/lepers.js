@@ -25,6 +25,11 @@ function writeObj(obj, message) {
   console.log(details);
 }
 
+console.log("Parsing des credentials...");
+var contents = fs.readFileSync("mdp.json");
+var passJson = JSON.parse(contents);
+console.log("OK !");
+
 console.log("Parsing de questions.json...");
 var contents = fs.readFileSync("questions.json");
 var questions = JSON.parse(contents);
@@ -37,11 +42,19 @@ console.log("OK !");
 
 var apiQuestionsNumber = 0;
 var initCount = 0;
+
+var chan = null; 
+
 function welcome(number) {
 	if(number) apiQuestionsNumber = number;
 	if(++initCount == 2) {
 		lepers = client.emojis.find("name", "lepers");
-		var chan = client.channels.values().next().value;
+		chan = client.channels.find(val => val.name === 'lepers' && val.type === 'text');
+		if(!chan) {
+			client.destroy();
+			console.log("ERREUR############# le chan \"lepers\" n'a pas pu être trouvé !");
+			throw '';
+		}
 		pickQuestion(function(question) {
 			curQuestion = question;
 			if(!SILENT) {
@@ -143,36 +156,36 @@ client.on('ready', function() {
 
 client.on('message', message => {
 	
-	if(message.author.bot) {
+	if(message.author.bot || !message.channel == chan) {
 		return;
 	}
 	
 	if(message.content === "!next") {
-		if (!SILENT) message.channel.send('*dung* Aaaaaah la la, quel dommage ! C\'était "'+curQuestion.correct_answer+'", bien é-vi-dem-ment ! Question suivante.\n\n');
+		if (!SILENT) chan.send('*dung* Aaaaaah la la, quel dommage ! C\'était "'+curQuestion.correct_answer+'", bien é-vi-dem-ment ! Question suivante.\n\n');
 		pickQuestion(function(question) {
 			curQuestion = question;
-			if(!SILENT) message.channel.send(formatQuestion(curQuestion));
+			if(!SILENT) chan.send(formatQuestion(curQuestion));
 			//console.log(formatQuestion(curQuestion));
 		});
 	} else if(message.content === "!question") {
-		if(!SILENT) message.channel.send(formatQuestion(curQuestion));
+		if(!SILENT) chan.send(formatQuestion(curQuestion));
 	} else if(message.content === "!indice") {
 		var indice = curQuestion.correct_answer.replace(/( |')?([a-zA-Z0-9àÀùÙéÉèÈâÂêÊîÎôÔûÛäÄëËïÏöÖüÜ])/g, function($0, $1, $2) { return $1 ? $1+$2+' ' : '_ ' });
 		indice = indice.trim().replace(/\*/g, '');
 		indice = curQuestion.correct_answer[0] + indice.slice(1);
-		if(!SILENT) message.channel.send('Un indice pour vous, chez vous : `'+indice+'`');
+		if(!SILENT) chan.send('Un indice pour vous, chez vous : `'+indice+'`');
 	} else if(message.content === "!scores") {
 		var str = 'Attention, mesdames et messieurs, ci-dessous le score de nos candidats :\n-----------------------';
 		
 		for(userId in scores) {
 			if(!userId) continue;
-			str += '\n' + message.channel.guild.members.get(userId).user.username + " - " + scores[userId];
+			str += '\n' + chan.guild.members.get(userId).user.username + " - " + scores[userId];
 		}
 		
 		str += '\n\nCeux qui n\'apparaissent pas n\'ont aucun point ! (tronul)'
-		if(!SILENT) message.channel.send(str);
+		if(!SILENT) chan.send(str);
 	} else if(message.content === "!help"){
-		message.channel.send('…top ! Je suis un animateur célèbre qui lit des questions à toute vitesse, et vous lisez ce texte avec ma voix ; j\'ai été transformé en bot pour démontrer votre absence de culture, je suis, je suis..?\n'
+		chan.send('…top ! Je suis un animateur célèbre qui lit des questions à toute vitesse, et vous lisez ce texte avec ma voix ; j\'ai été transformé en bot pour démontrer votre absence de culture, je suis, je suis..?\n'
 		+'\nVoici mes commandes :\n-----------------------\n'
 		+'!question - Répète la question en cours\n'
 		+'!indice - Un indice pour vous, chez vous\n'
@@ -187,7 +200,7 @@ client.on('message', message => {
 			increaseScore(message.author.id);
 			pickQuestion(function(question) {
 				curQuestion = question;
-				if(!SILENT) message.channel.send(formatQuestion(curQuestion));
+				if(!SILENT) chan.send(formatQuestion(curQuestion));
 				//console.log(formatQuestion(curQuestion));
 			});
 		}
@@ -195,4 +208,4 @@ client.on('message', message => {
 	
 });
 
-client.login('Mzg5NzU3ODYxODYyOTY1MjQ4.DRAQvQ.qfUZ-RB5cmCnHVvsLmajjvPWbUo');
+client.login(passJson.pass);
