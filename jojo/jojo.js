@@ -2,6 +2,12 @@
 
 const Discord = require('discord.js');
 const client = new Discord.Client();
+var fs = require("fs");
+
+console.log("Parsing des credentials...");
+var contents = fs.readFileSync("mdp.json");
+var passJson = JSON.parse(contents);
+console.log("OK !");
 
 client.on('ready', () => {
   console.log('Ready to work!');
@@ -79,4 +85,4 @@ client.on('message', message => {
 	}
 });
 
-client.login('Mzg3MzA1OTU4OTMxNjkzNTc4.DQc1jw.wdQ7myRSFKbH9As_qUGOncfylcE');
+client.login(passJson.pass);

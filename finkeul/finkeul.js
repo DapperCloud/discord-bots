@@ -2,11 +2,17 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const stream = require('stream');
+var fs = require("fs");
 
 var voiceConnection;
 var voiceChannel;
 
-client.login('Mzg3NjAyMTQzMjEwNzY2MzM3.DQg2UQ.Q_L2i0xQE8GC69emhyFPaD2Pz48');
+console.log("Parsing des credentials...");
+var contents = fs.readFileSync("mdp.json");
+var passJson = JSON.parse(contents);
+console.log("OK !");
+
+client.login(passJson.pass);
 
 client.on('ready', () => {
   console.log('Ready to work!');
