@@ -50,10 +50,17 @@ function logTwitterError(err) {
 	writeObj(err);
 }
 
-function linkTweet(data, channel) {
+function checkTweet(data) {
 	if(!data || !data.user) {
 		console.log("ERREUR############# les données du tweet sont invalides !");
 		writeObj(data);
+		return false;
+	}
+	return true;
+}
+
+function linkTweet(data, channel) {
+	if(!checkTweet(data)) {
 		return;
 	} 
 	channel.send("https://twitter.com/"+data.user.screen_name+"/status/"+data.id_str);
@@ -70,10 +77,14 @@ function follow(screen_name, channel) {
 		channel.send("Une erreur est survenue. Êtes-vous sûr que ce nom d'utilisateur existe..?");
 	}, function(data) {
 		var tweet = JSON.parse(data)[0];
-		followedUsers[screen_name] = tweet.id_str;
-		console.log(followedUsers);
+		if(!checkTweet(tweet)) {
+			channel.send("Une erreur est survenue dans la lecture du dernier tweet. L'utilisateur n'a pas été suivi.");
+			return;
+		}
+		var realScreenName = tweet.user.screen_name;
+		followedUsers[realScreenName] = tweet.id_str;
 		fs.writeFileSync("followed.json", JSON.stringify(followedUsers));
-		channel.send("L'utilisateur "+screen_name+" est maintenant suivi !");
+		channel.send("L'utilisateur "+realScreenName+" est maintenant suivi !");
 	});
 }
 
@@ -99,11 +110,31 @@ function listFollowed(channel) {
 	channel.send(message);
 }
 
+function checkForNewTweets(channel) {
+	console.log("Checking for new tweets...");
+	for(user in followedUsers) {
+		twitter.getUserTimeline({ screen_name: user, count: '1'}, function(err, reponse, body) {
+			logTwitterError(err);
+		}, function(data) {
+			var newTweet = JSON.parse(data)[0];
+			if(!checkTweet(newTweet)) return;
+			var user = newTweet.user.screen_name;
+			if(newTweet.id_str != followedUsers[user]) {
+				linkTweet(newTweet, twitterChan);
+				followedUsers[user] = newTweet.id_str;
+				fs.writeFileSync("followed.json", JSON.stringify(followedUsers));
+			}
+		});
+	}
+}
+
 // Connection
 client.login(passJson.pass);
 client.on('ready', () => {
   console.log('Ready to work!');
   welcome();
+  // Poll for new tweets
+  setInterval(() => checkForNewTweets(twitterChan), 60000);
 });
 
 // Watch messages
@@ -147,7 +178,7 @@ client.on('message', message => {
 		+"Mes commandes :\n"
 		+"**********************************************\n"
 		+"t/last [nom_twitter] - affiche le dernier tweet de l'utilisateur\n"
-		+"t/follow [nom_twitter] - suivre un utilisateur\n"
+		+"t/follow [nom_twitter] - suivre un utilisateur (affichera ses tweets dans ce salon)\n"
 		+"t/unfollow [nom_twitter] - ne plus suivre un utilisateur");
 	}
 });
