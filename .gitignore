@@ -63,4 +63,7 @@ typings/
 # scores de lepers
 lepers/scores.json
 
+# utilisateurs suivis de twitter
+twitter/followed.json
+
 
