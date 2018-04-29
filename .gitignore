@@ -59,3 +59,8 @@ typings/
 
 # credentials
 *mdp.json
+
+# scores de lepers
+lepers/scores.json
+
+
