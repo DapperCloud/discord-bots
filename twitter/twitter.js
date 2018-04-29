@@ -179,7 +179,8 @@ client.on('message', message => {
 		+"**********************************************\n"
 		+"t/last [nom_twitter] - affiche le dernier tweet de l'utilisateur\n"
 		+"t/follow [nom_twitter] - suivre un utilisateur (affichera ses tweets dans ce salon)\n"
-		+"t/unfollow [nom_twitter] - ne plus suivre un utilisateur");
+		+"t/unfollow [nom_twitter] - ne plus suivre un utilisateur\n"
+		+"t/list - liste les utilisateurs suivis");
 	}
 });
 
