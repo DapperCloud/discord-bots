@@ -9,11 +9,6 @@ var contents = fs.readFileSync("mdp.json");
 var passJson = JSON.parse(contents);
 console.log("OK !");
 
-console.log("Parsing des credentials...");
-var contents = fs.readFileSync("mdp.json");
-var passJson = JSON.parse(contents);
-console.log("OK !");
-
 function writeObj(obj, message) {
   if (!message) { message = obj; }
   var details = "*****************" + "\n" + message + "\n";

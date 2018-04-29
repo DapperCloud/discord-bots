@@ -9,11 +9,6 @@ var contents = fs.readFileSync("mdp.json");
 var passJson = JSON.parse(contents);
 console.log("OK !");
 
-console.log("Parsing des credentials...");
-var contents = fs.readFileSync("mdp.json");
-var passJson = JSON.parse(contents);
-console.log("OK !");
-
 client.on('ready', () => {
   console.log('Ready to work!');
   jojo = client.emojis.find("name", "jojo");
