@@ -71,9 +71,9 @@ client.on('message', message => {
 	// Put command args in an array and verify syntax
 	var args = message.content.split(" ");
 	if(args.length == 0) return;
-	if(args[0].slice(0,1) != "/") return;
+	if(args[0].slice(0,2) != "t/") return;
 
-	if (args[0] === "/last") {
+	if (args[0] === "t/last") {
 		if(args.length <= 1 || args[1].length <= 1) return;
 		twitter.getUserTimeline({ screen_name: args[1], count: '1'}, function(err, reponse, body) {
 			logTwitterError(err);
@@ -82,11 +82,11 @@ client.on('message', message => {
 		});
 	}
 	
-	if (args[0] === "/help") {
+	if (args[0] === "t/help") {
 		message.reply("Cui cui, je suis là pour vous permettre d'accéder au caca de Twitter directement depuis Discord !\n"
 		+"Mes commandes :\n"
 		+"**********************************************\n"
-		+"/last [nom_twitter] - affiche le dernier tweet de l'utilisateur\n");
+		+"t/last [nom_twitter] - affiche le dernier tweet de l'utilisateur\n");
 	}
 });
 
