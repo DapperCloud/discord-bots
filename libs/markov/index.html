@@ -1,0 +1,40 @@
+<html>
+	<head>
+		<script type="text/javascript" src="markov.js"></script>
+	</head>
+	<body>
+		<form>
+			<label for="strategy">Stratégie: </label>
+			<input type="radio" id="s_character" name="strategy" value="character" checked> character
+			<input type="radio" id="s_word" name="strategy" value="word"> word
+		</form>
+		<label for="order">Order: </label><input type="number" id="order"/>
+		<br/>
+		<label for="iterations">Iterations: </label><input type="number" id="iterations"/>
+		<br/>
+		<label for="text">Text: </label><textarea id="text" rows="4" cols="50"></textarea>
+		<button id="button">Generate!</button>
+		<div id="result"><div>
+
+		<script type="text/javascript">
+			document.getElementById("button").onclick = function() {
+				var text = document.getElementById("text").value;
+				var order = document.getElementById("order").value;
+				var iterations = document.getElementById("iterations").value;
+				var order = parseInt(order);
+				var iterations = parseInt(iterations);
+
+				var strategy = null;
+				if(document.getElementById("s_character").checked) strategy = markov.Strategy.CHARACTER;
+				else if(document.getElementById("s_word").checked) strategy = markov.Strategy.WORD;
+
+				var generator = new markov.TextGenerator(strategy, order);
+
+				generator.addText(text);
+				console.log(Math.random());
+				console.log(generator.chainString());
+				document.getElementById("result").innerHTML = generator.generateText(iterations);
+			}
+		</script>
+	</body>
+</html>
