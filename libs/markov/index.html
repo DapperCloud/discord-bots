@@ -30,7 +30,10 @@
 
 				var generator = new markov.TextGenerator(strategy, order);
 
-				generator.addText(text);
+				var lines = text.split("\n");
+				for(index in lines) {
+					generator.addText(lines[index]);
+				}
 				console.log(Math.random());
 				console.log(generator.chainString());
 				document.getElementById("result").innerHTML = generator.generateText(iterations);

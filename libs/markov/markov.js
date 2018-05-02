@@ -1,4 +1,5 @@
 var markov = (function() {
+
 	this.Strategy = Object.freeze({ CHARACTER:1, WORD:2 });
 
 	this.TextGenerator = function(strategy, order) {
@@ -8,76 +9,89 @@ var markov = (function() {
 
 		//Add text to the TG's database
 		this.addText = function(text) {
-			var circularText = null;
-			if(strategy == Strategy.CHARACTER) {
-				circularText = text + text.slice(0, order);
-			} else if (strategy == Strategy.WORD) {
-				circularText = text.split(" ");
-				for(var i=0; i<order; i++) {
-					circularText.push(circularText[i]);
-				}
+			var cursor = 0;
+
+			if(strategy == Strategy.WORD) {
+				text = text.trim().replace(/\n|\r\n|\t/g, "");
+				if(text.length < 3) return;
+				if(!isTerminationChar(text[text.length-1])) text += ".";
+				text = text.replace(/\.\.\./g, " … ").replace(/\./g, " . ").replace(/!/g, " ! ")
+					.replace(/\?/g, " ? ").replace(/\:/g, " : ").replace(/;/g, " ; ").replace(/,/g, " , ");
+				text = text.replace(/ +/g, " ").trim();
+				text = text.split(" ");
 			}
 
-			var cursor = 0;
-			while(cursor+order < circularText.length) {
-				var current = cutTextPortion(circularText, cursor);
-				var next = cutTextPortion(circularText, cursor+1);
-				chain.addTransition(current, next);
-				cursor++;
+			if(text.length<order) return;
+
+			chain.addTransition("", cutTextPortion(text, 0))
+			while(cursor+order < text.length) {
+				var current = cutTextPortion(text, cursor);
+				if(isPunctuation(current[current.length-1])) {
+					var isTerm = isTerminationChar(current[current.length-1]);
+					if(isTerm) {
+						chain.addTransition(current, "");
+						cursor++;
+					}
+					var indexNext = findNextNonPunctuation(text, cursor+1);
+					if(indexNext) {
+						cursor = indexNext;
+						if(isTerm) chain.addTransition("", cutTextPortion(text, cursor));
+						else chain.addTransition(current, cutTextPortion(text, cursor));
+					} else {
+						return;
+					}
+						
+				} else {
+					var next = cutTextPortion(text, cursor+1);
+					chain.addTransition(current, next);
+					cursor++;
+				}
 			}
+		}
+
+		function findNextNonPunctuation(text, index) {
+			var next = cutTextPortion(text, index);
+			while(isPunctuation(next) && index+order < text.length) {
+				index++;
+				next = cutTextPortion(text, index);
+			}
+			if(!isPunctuation(next)) return index;
+			return null;
+		}
+
+		function isPunctuation(char) {
+			return isTerminationChar(char) || char === ":" || char === ";";
+		}
+		function isTerminationChar(char) {
+			return char === "." || char === "!" || char === "?" || char === "…";
 		}
 
 		function cutTextPortion(text, index) {
 			return text.slice(index, index+order);
 		}
 
-		this.generateTextWithStart = function(iterations, start) {
+		this.generateText = function(iterationsMax) {
 			var iterations = parseInt(iterations);
-			var lastItem = start;
-			var lastChar = null;
+			var lastItem = chain.next("");
+			var text = strategy == Strategy.WORD ? lastItem.join(" ") : lastItem;
 
-			if(strategy == Strategy.WORD) {
-				var text = start.join(" ");
-			} else {
-				var text = start;
-			}
-
-			function newIteration() {
-				var newChar = chain.next(lastItem);
-				if(strategy == Strategy.WORD) text += " ";
-				text += newChar;
-				lastItem = lastItem.slice(1);
-				if(strategy == Strategy.CHARACTER) {
-					lastItem += newChar;
+			var count = 0;
+			while(count < iterationsMax) {
+				lastItem = chain.next(lastItem);
+				if(lastItem === "") {
+					lastItem = chain.next(lastItem);
+					var addition = strategy == Strategy.WORD ? lastItem.join(" ") : lastItem;
 				} else {
-					lastItem.push(newChar);
+					var addition = lastItem[lastItem.length-1];	
 				}
-				lastChar = newChar;
-			}
+				if(strategy == Strategy.WORD && !isPunctuation(addition)) text += " ";
+				text += addition;
 
-			for(var i=0; i<iterations; i++) {
-				newIteration();
-			}
-
-			var charToTerminate = strategy == Strategy.CHARACTER ? " " : ".";
-			if(text.includes(charToTerminate)) {
-				//Keep going until we have the termination char. Can't exceed 150% of iterations.
-				var count = 0;
-				while(count < iterations/2 && text.slice(text.length-1) != charToTerminate) {
-					newIteration();
-					count++;
-				}
+				count++;
+				if(count > 0.7*iterationsMax && isTerminationChar(addition)) return text;
 			}
 
 			return text;
-		}
-
-		//Generates from a random start
-		this.generateText = function(iterations) {
-			var keys = Object.keys(chain.nodes);
-			var randomIndex = randomInt(keys.length-1);
-			var key = keys[randomIndex];
-			return this.generateTextWithStart(iterations, chain.nodes[key].getValue());
 		}
 
 		this.chainString = function() {
@@ -98,10 +112,11 @@ var markov = (function() {
 			this.nodes[stringFrom].addVerticeTo(this.nodes[stringTo]);
 		}
 
-		//Picks a random next item
+		//Picks a random next node
 		this.next = function(fromValue) {
-			var toNode = this.nodes[fromValue].pickRandomVertice().getValue();
-			return toNode[toNode.length-1] //The item is the last element of the node's value;
+			if(this.nodes[fromValue].getVertices().length == 0) this.addTransition(fromValue, "");
+			var toNode = this.nodes[fromValue].pickRandomVertice();
+			return toNode ? toNode.getValue() : null;
 		}
 
 		this.toString = function() {
@@ -122,7 +137,7 @@ var markov = (function() {
 				vertices.push(node); 
 			}
 			this.pickRandomVertice = function() {
-				return vertices[randomInt(vertices.length-1)]
+				return vertices.length > 0 ? vertices[randomInt(vertices.length-1)] : null;
 			}
 		}
 	}
