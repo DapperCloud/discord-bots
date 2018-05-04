@@ -66,4 +66,5 @@ lepers/scores.json
 # utilisateurs suivis de twitter
 twitter/followed.json
 
-
+# chaines de markov de coco
+coco/markov.json

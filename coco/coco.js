@@ -84,7 +84,7 @@ client.on('message', message => {
 			}
 		} else if (args[0] == "c/like") {
 			if(args.length <= 1 || args[1].length <= 1) return;
-			var userName = args[1];
+			var userName = args.slice(1).join(" ");
 			var user = client.users.find(u => u.username == userName);
 			if(!user) {
 				message.reply("Je ne trouve pas l'utilisateur "+userName+" !");

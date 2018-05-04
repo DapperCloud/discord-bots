@@ -14,7 +14,7 @@ module.exports.removeLinks = function(str) {
 }
 
 module.exports.parseMessage = function(message, chain) {
-	var text = module.exports.removeLinks(message.content);
+	var text = module.exports.removeLinks(message.content).toLowerCase();
 	var lines = text.split("\n");
 	for(lineCount in lines) {
 		var line = lines[lineCount];
