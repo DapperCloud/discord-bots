@@ -1,4 +1,5 @@
 var natural = require('natural');
+var parser = require('./coco-parser.js')
 var markov = require('../libs/markov/markov.js');
 var NGrams = natural.NGrams;
 
@@ -11,16 +12,54 @@ var contents = fs.readFileSync("mdp.json");
 var passJson = JSON.parse(contents);
 console.log("OK !");
 
+console.log("Parsing de markov.json...");
+var contents = fs.readFileSync("markov.json");
+var markovJson = JSON.parse(contents);
+userMarkovs = {};
+for(userId in markovJson) {
+	userMarkovs[userId] = new markov.MarkovChain(markovJson[userId].nodes);
+}
+console.log("OK !");
+
+function writeObj(obj, message) {
+  if (!message) { message = obj; }
+  var details = "*****************" + "\n" + message + "\n";
+  var fieldContents;
+  for (var field in obj) {
+    fieldContents = obj[field];
+    if (typeof(fieldContents) == "function") {
+      fieldContents = "(function)";
+    }
+    details += "  " + field + ": " + fieldContents + "\n";
+  }
+  console.log(details);
+}
+
 client.on('ready', () => {
   console.log('Ready to work!');
 });
 
-var EMPTY = Object.freeze(["", "", ""]);
-
-userMarkovs = [];
+var EMPTY = Object.freeze(["", ""]);
 
 sentenceTokenizer = new natural.SentenceTokenizer();
 wordTokenizer = new natural.AggressiveTokenizerFr();
+
+function generateForUser(id) {
+	if(!(id in userMarkovs)) {
+		return null;
+	}
+	var chain = userMarkovs[id];
+	var prefix = EMPTY;
+	var text = "";
+	var count = 0;
+	while(count++ < 150) {
+		var suffix = chain.next(prefix);
+		if(!suffix || suffix == "") break;
+		text += (count>1? " " : "") + suffix;
+		prefix = [prefix[1], suffix];
+	}
+	return text;
+}
 
 client.on('message', message => {
 	
@@ -28,29 +67,48 @@ client.on('message', message => {
 		return;
 	}
 
-	//Sélectionne la chaine de l'utilisateur
-	var userId = message.author.id;
-	if(!(userId in userMarkovs)) {
-		userMarkovs[userId] = new markov.MarkovChain();
-	}
-	var chain = userMarkovs[userId];
-
-	if(message.content.length < 2) return;
+	console.log("message: "+message.content);
 
 	//Commandes
 	if(message.content.slice(0,2) === "c/") {
-		var current = chain.next(EMPTY);
-		var text = "";
-		text += current.join(" ");
-		console.log(current);
-		var count = 0;
-		while(count++ < 250) {
-			current = chain.next(current);
-			console.log(current);
-			if(current == EMPTY) break;
-			text += " " + current[2];
-		}
-		message.channel.send(text);
+
+		// Put command args in an array
+		var args = message.content.split(" ");
+
+		if(args[0] === "c/me") {
+			var text = generateForUser(message.author.id);
+			if(text) {
+				message.channel.send(text);
+			} else {
+				message.reply("T'as jamais parlé, je ne peux pas t'imiter !");
+			}
+		} else if (args[0] == "c/like") {
+			if(args.length <= 1 || args[1].length <= 1) return;
+			var userName = args[1];
+			var user = client.users.find(u => u.username == userName);
+			if(!user) {
+				message.reply("Je ne trouve pas l'utilisateur "+userName+" !");
+				return;
+			}
+
+			var text = generateForUser(user.id);
+			if(text) {
+				message.channel.send(text);
+			} else {
+				message.reply("Cet utilisateur ne s'est jamais exprimé, je ne peux pas l'imiter !");
+			}
+
+		} else if(args[0] == "c/save") {
+			/*console.log("Sauvegarde de markov.json...")
+			fs.writeFileSync("markov.json", JSON.stringify(userMarkovs));
+			console.log("OK !");*/
+		} else if(args[0] == "c/help") {
+			message.reply("COCO EST CONTEEEEENT !\n"
+			+"Mes commandes :\n"
+				+"**********************************************\n"
+				+"c/me  - Je parle comme toi\n"
+				+"c/like [utilisateur] - Je parle comme l'utilisateur en paramètre (nom d'utilisateur Discord)\n");
+		}	
 
 		return;
 	}
@@ -58,28 +116,14 @@ client.on('message', message => {
 	//On ignore les commandes pour l'apprentissage
 	if(message.content.split(" ")[0].includes("/")) return;
 	
-
-	//Apprentissage d'un nouvea message
-	var text = markov.removeLinks(message.content);
-	console.log(text);
-	var sentences = sentenceTokenizer.tokenize(text+".");
-	console.log(sentences);
-	for(numSentence in sentences) {
-		var sentence = sentences[numSentence];
-		console.log(sentence);
-		var words = wordTokenizer.tokenize(sentence);
-			var trigrams = NGrams.ngrams(words, 3, "");
-			trigrams = trigrams.filter(t => t.length == 3);
-			console.log(trigrams);
-			chain.addTransition(EMPTY, trigrams[0]);
-			if(trigrams.length > 1) {
-				for(var i=0; i < trigrams.length-1; i++) {
-					chain.addTransition(trigrams[i], trigrams[i+1]);
-				}
-			}
-			chain.addTransition(trigrams[trigrams.length-1], EMPTY);
+	//On parse le message
+	var userId = message.author.id;
+	if(!(userId in userMarkovs)) {
+		userMarkovs[userId] = new markov.MarkovChain();
 	}
-	console.log(chain.toString());
+	var chain = userMarkovs[userId];
+	parser.parseMessage(message, chain);
+	
 });
 
 client.login(passJson.pass);

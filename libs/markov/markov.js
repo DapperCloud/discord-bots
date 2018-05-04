@@ -1,50 +1,46 @@
 var markov = (function() {
 
-	this.removeLinks = function(str) {
-		return str.replace(/https?\:\/\/[^ ]*/g,"").replace(/www\.[^ ]*/g,"");
-	}
+	this.MarkovChain = function(nodes) {
 
-	this.MarkovChain = function() {
+		this.nodes = nodes ? nodes : {};
 
-		this.nodes = [];
+		this.addTransition = function(prefix, suffix) {
+			if(!(prefix in this.nodes)) this.nodes[prefix] = {};
+			if(!(suffix in this.nodes[prefix])) this.nodes[prefix][suffix] = 0;
 
-		this.addTransition = function(ngramFrom, ngramTo) {
-			if(!(ngramFrom in this.nodes)) this.nodes[ngramFrom] = new Node(ngramFrom);
-			if(!(ngramTo in this.nodes)) this.nodes[ngramTo] = new Node(ngramTo);
-
-			this.nodes[ngramFrom].addVerticeTo(this.nodes[ngramTo]);
+			this.nodes[prefix][suffix]++;
 		}
 
-		//Picks a random next node
-		this.next = function(fromValue) {
-			if(this.nodes[fromValue].getVertices().length == 0) this.addTransition(fromValue, "");
-			var toNode = this.nodes[fromValue].pickRandomVertice();
-			return toNode ? toNode.getValue() : null;
+		//Picks a random suffix
+		this.next = function(prefix) {
+			//console.log("call next from "+prefix);
+			if(!(prefix in this.nodes)) return null;
+			var suffixes = this.nodes[prefix];
+			var probaSum = Object.values(suffixes).reduce((a,b) => a + b);
+			var random = randomInt(probaSum);
+
+			var tuples = [];
+
+			for (var key in suffixes) tuples.push([key, suffixes[key]]);
+
+			tuples.sort(function(a, b) {
+			    a = a[1];
+			    b = b[1];
+
+			    return a < b ? -1 : (a > b ? 1 : 0);
+			});
+
+			var cumul = 0;
+			for (var i = 0; i < tuples.length; i++) {
+				var suffix = tuples[i][0];
+			    var proba = tuples[i][1];
+			    cumul += proba;
+			    if (random <= cumul) return suffix;
+			}
 		}
 
 		this.toString = function() {
-			return "Nodes { " + Object.keys(this.nodes).join("; ") + " }\n"+
-				"Vertices:\n" + Object.keys(this.nodes).map(val => "{ ("+val+") => "+this.nodes[val].getVertices().map(n=>n.getValue()).join("; ")+" }\n");
-		}
-
-		var Node = function(ngram) {
-			var value = ngram;
-			var vertices = []; //vertices from this node
-			this.getValue = function() { 
-				return value; 
-			}
-			this.getVertices = function() {
-				return vertices;
-			}
-			this.addVerticeTo = function(node) { 
-				vertices.push(node); 
-			}
-			this.pickRandomVertice = function() {
-				return vertices.length > 0 ? vertices[randomInt(vertices.length-1)] : null;
-			}
-			this.getSuffix = function() {
-				return value[value.length-1];
-			}
+			return Object.keys(this.nodes).map(prefix => "{ ("+prefix+") => "+Object.keys(this.nodes[prefix]).map(suffix => "("+suffix+":"+this.nodes[prefix][suffix]+")").join(" ")+" }\n");
 		}
 	}
 

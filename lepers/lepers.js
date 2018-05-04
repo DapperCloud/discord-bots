@@ -160,21 +160,21 @@ client.on('message', message => {
 		return;
 	}
 	
-	if(message.content === "!next") {
+	if(message.content === "l/next") {
 		if (!SILENT) chan.send('*dung* Aaaaaah la la, quel dommage ! C\'était "'+curQuestion.correct_answer+'", bien é-vi-dem-ment ! Question suivante.\n\n');
 		pickQuestion(function(question) {
 			curQuestion = question;
 			if(!SILENT) chan.send(formatQuestion(curQuestion));
 			//console.log(formatQuestion(curQuestion));
 		});
-	} else if(message.content === "!question") {
+	} else if(message.content === "l/question") {
 		if(!SILENT) chan.send(formatQuestion(curQuestion));
-	} else if(message.content === "!indice") {
+	} else if(message.content === "l/indice") {
 		var indice = curQuestion.correct_answer.replace(/( |')?([a-zA-Z0-9àÀùÙéÉèÈâÂêÊîÎôÔûÛäÄëËïÏöÖüÜ])/g, function($0, $1, $2) { return $1 ? $1+$2+' ' : '_ ' });
 		indice = indice.trim().replace(/\*/g, '');
 		indice = curQuestion.correct_answer[0] + indice.slice(1);
 		if(!SILENT) chan.send('Un indice pour vous, chez vous : `'+indice+'`');
-	} else if(message.content === "!scores") {
+	} else if(message.content === "l/scores") {
 		var str = 'Attention, mesdames et messieurs, ci-dessous le score de nos candidats :\n-----------------------';
 		
 		for(userId in scores) {
@@ -184,13 +184,13 @@ client.on('message', message => {
 		
 		str += '\n\nCeux qui n\'apparaissent pas n\'ont aucun point ! (tronul)'
 		if(!SILENT) chan.send(str);
-	} else if(message.content === "!help"){
+	} else if(message.content === "l/help"){
 		chan.send('…top ! Je suis un animateur célèbre qui lit des questions à toute vitesse, et vous lisez ce texte avec ma voix ; j\'ai été transformé en bot pour démontrer votre absence de culture, je suis, je suis..?\n'
 		+'\nVoici mes commandes :\n-----------------------\n'
-		+'!question - Répète la question en cours\n'
-		+'!indice - Un indice pour vous, chez vous\n'
-		+'!next - Passe à la question suivante\n'
-		+'!scores - Affiche les scores'
+		+'l/question - Répète la question en cours\n'
+		+'l/indice - Un indice pour vous, chez vous\n'
+		+'l/next - Passe à la question suivante\n'
+		+'l/scores - Affiche les scores'
 		+'\n\nAh qu\'il est beau, qu\'il est beau ce jeu ! Alors on ne triche pas en allant chercher les réponses sur internet. Merci.');
 	} else {
 		var proposition = normalizeAnswer(message.content);
