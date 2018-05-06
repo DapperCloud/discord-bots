@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 var natural = require('natural');
 var parser = require('./coco-parser.js')
 var markov = require('../libs/markov/markov.js');
