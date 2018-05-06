@@ -35,14 +35,7 @@ function writeObj(obj, message) {
   console.log(details);
 }
 
-client.on('ready', () => {
-  console.log('Ready to work!');
-});
-
 var EMPTY = Object.freeze(["", ""]);
-
-sentenceTokenizer = new natural.SentenceTokenizer();
-wordTokenizer = new natural.AggressiveTokenizerFr();
 
 function generateForUser(id) {
 	if(!(id in userMarkovs)) {
@@ -53,21 +46,41 @@ function generateForUser(id) {
 	var text = "";
 	var count = 0;
 	while(count++ < 150) {
+		var previous = suffix;
 		var suffix = chain.next(prefix);
-		if(!suffix || suffix == "") break;
-		text += (count>1? " " : "") + suffix;
+		//console.log(suffix);
+		if(!suffix || suffix == "") {
+			if (count > 10) break; //If we have at least 10 tokens, we stop here
+			//New sentence
+			if(!previous.match(/\.+|[?!]+/)) text += ".";
+			previous = ".";
+			prefix = EMPTY;
+			continue;
+		}
+		text += (count>1 && !suffix.match(/\,|\.+|\'/) && previous != "'" ? " " : "") + suffix;
 		prefix = [prefix[1], suffix];
 	}
+
 	return text;
 }
 
+function saveMarkov() {
+	console.log("Sauvegarde de markov.json...")
+	fs.writeFileSync("markov.json", JSON.stringify(userMarkovs));
+	console.log("OK !");
+}
+
+client.on('ready', () => {
+	console.log('Ready to work!');
+	// Save markov chains every hour
+  	setInterval(() => saveMarkov(twitterChan), 3600000);
+});
+
 client.on('message', message => {
-	
+
 	if(message.author.bot) {
 		return;
 	}
-
-	console.log("message: "+message.content);
 
 	//Commandes
 	if(message.content.slice(0,2) === "c/") {
@@ -98,10 +111,6 @@ client.on('message', message => {
 				message.reply("Cet utilisateur ne s'est jamais exprimé, je ne peux pas l'imiter !");
 			}
 
-		} else if(args[0] == "c/save") {
-			/*console.log("Sauvegarde de markov.json...")
-			fs.writeFileSync("markov.json", JSON.stringify(userMarkovs));
-			console.log("OK !");*/
 		} else if(args[0] == "c/help") {
 			message.reply("COCO EST CONTEEEEENT !\n"
 			+"Mes commandes :\n"
