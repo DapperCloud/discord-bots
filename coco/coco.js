@@ -75,7 +75,7 @@ function saveMarkov() {
 client.on('ready', () => {
 	console.log('Ready to work!');
 	// Save markov chains every hour
-  	setInterval(() => saveMarkov(twitterChan), 3600000);
+  	setInterval(() => saveMarkov(), 3600000);
 });
 
 client.on('message', message => {
