@@ -5,6 +5,8 @@ const client = new Discord.Client();
 var opentdb = require('./opentdb.js');
 var fs = require("fs");
 
+var SpotifyWebApi = require('spotify-web-api-node');
+
 SILENT = false;
 mode = 'libre';
 lepers = null;
@@ -29,6 +31,16 @@ console.log("Parsing des credentials...");
 var contents = fs.readFileSync("mdp.json");
 var passJson = JSON.parse(contents);
 console.log("OK !");
+
+var spotifyApi = new SpotifyWebApi({
+  clientId: passJson.spotify.clientId,
+  clientSecret: passJson.spotify.clientSecret,
+  redirectUri: passJson.spotify.redirectUri
+});
+
+// The code that's returned as a query parameter to the redirect URI
+//var code = passJson.spotify_code;
+spotifyApi.setRefreshToken(passJson.spotify.refreshToken);
 
 console.log("Parsing de questions.json...");
 var contents = fs.readFileSync("questions.json");
@@ -149,18 +161,92 @@ function increaseScore(userId) {
 	fs.writeFileSync("scores.json", JSON.stringify(scores));
 }
 
+function refreshSpotifyToken() {
+	spotifyApi.refreshAccessToken().then(
+		function(data) {
+			console.log('The access token has been refreshed!');
+			console.log('The token expires in ' + data.body['expires_in']);
+			console.log('The access token is ' + data.body['access_token']);
+
+			// Set the access token on the API object to use it in later calls
+			spotifyApi.setAccessToken(data.body['access_token']);
+		},
+		function(err) {
+			console.log('Could not refresh access token', err);
+		}
+	);
+}
+
 client.on('ready', function() {
 	console.log('ready to work !');
 	welcome();
+	refreshSpotifyToken();
+	setInterval(() => refreshSpotifyToken, 1800*1000); //Refresh every 30 minutes
 });
+
+var voiceConnection;
+var voiceChannel;
+var currentTrack;
 
 client.on('message', message => {
 	
 	if(message.author.bot || !message.channel == chan) {
 		return;
 	}
-	
-	if(message.content === "l/next") {
+
+	if (message.content === 'l/join') {
+		// Only try to join the sender's voice channel if they are in one themselves
+		if (message.member.voiceChannel) {
+		  message.member.voiceChannel.join()
+			.then(connection => { // Connection is an instance of VoiceConnection
+			  voiceConnection = connection;
+			  voiceChannel = message.member.voiceChannel;
+			  message.reply('Connecté !');
+			})
+			.catch(console.log);
+		} else {
+		  message.reply("Vous n'êtes connectés à aucun serveur vocal !");
+		}
+	}
+	else if (message.content === 'l/leave') {
+		if (voiceChannel) {
+			voiceChannel.leave();
+			voiceConnection = null;
+			voiceChannel = null;
+			message.reply('Déconnecté !');
+		} else {
+			message.reply('Je ne suis actuellement sur aucun serveur vocal.');
+		}
+	}	
+	else if (message.content === 'b/next') {
+		spotifyApi.searchTracks('genre:rock')
+			.then(function(data) {
+				console.log(data.body);
+				var tracks = data.body.tracks.items;
+				for(var i in tracks) {
+					if(tracks[i].preview_url) {
+						currentTrack = tracks[i];
+						break;
+					}
+				}
+				/*var rand = Math.floor(Math.random()*tracks.length);
+				console.log(tracks[rand].preview_url);*/
+				/*var dispatcher = voiceConnection.playArbitraryInput(tracks[rand].preview_url);
+				setTimeout(() => dispatcher.end(), 10000);*/
+			}, function(err) {
+				if(err.statusCode == 401) {
+					refreshSpotifyToken();
+				};
+				console.log('Something went wrong!', err);
+			});
+	} else if (message.content === 'b/play') {
+		for(var i in currentTrack.artists) writeObj(currentTrack.artists[i]);
+		console.log(currentTrack.name);
+		/*var dispatcher = voiceConnection.playArbitraryInput(currentTrack.preview_url);
+		setTimeout(() => dispatcher.end(), 10000);*/
+	} else if (message.content === 'l/test') 
+	voiceConnection.playArbitraryInput('http://translate.google.com/translate_tts?ie=UTF-8&q='+encodeURI('tripotte moi la bite')+'&tl=fr&client=tw-ob');
+	else if(message.content === "l/next") {
 		if (!SILENT) chan.send('*dung* Aaaaaah la la, quel dommage ! C\'était "'+curQuestion.correct_answer+'", bien é-vi-dem-ment ! Question suivante.\n\n');
 		pickQuestion(function(question) {
 			curQuestion = question;
