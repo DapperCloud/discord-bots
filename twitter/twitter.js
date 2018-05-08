@@ -46,24 +46,50 @@ function welcome(number) {
 }
 
 function logTwitterError(err) {
-	console.log('ERROR');
-	writeObj(err);
+	console.log('ERROR: '+err);
 }
 
-function checkTweet(data) {
-	if(!data || !data.user) {
+function getLastTweet(data) {
+	if(!checkData(data)) {
+		return null;
+	}
+	if(data.statuses.length == 0) return null;
+
+	//Find the last tweet that was not a reply
+	for(var i=0; i<data.statuses.length; i++) {
+		if(!data.statuses[i].in_reply_to_status_id_str) return data.statuses[i];
+	}
+
+	//If they're all replies, return the last one
+	return data.statuses[0];
+}
+
+function getNewTweets(data, since_id) {
+	if(!checkData(data)) {
+		return null;
+	}
+
+	//Find the tweets that were not replies
+	var tweets = [];
+	for(var i=0; i<data.statuses.length; i++) {
+		if(!data.statuses[i].in_reply_to_status_id_str) tweets.push(data.statuses[i]);
+	}
+
+	return tweets;
+}
+
+function checkData(data) {
+	if(!data || !data.statuses) {
 		console.log("ERREUR############# les données du tweet sont invalides !");
-		writeObj(data);
+		console.log(data);
 		return false;
 	}
+
 	return true;
 }
 
-function linkTweet(data, channel) {
-	if(!checkTweet(data)) {
-		return;
-	} 
-	channel.send("https://twitter.com/"+data.user.screen_name+"/status/"+data.id_str);
+function linkTweet(tweet, channel) {
+	channel.send("https://twitter.com/"+tweet.user.screen_name+"/status/"+tweet.id_str);
 }
 
 function follow(screen_name, channel) {
@@ -72,12 +98,12 @@ function follow(screen_name, channel) {
 		return;
 	}
 	// On va chercher le dernier tweet pour le stocker (et vérifier au passage que l'utilisateur existe)
-	twitter.getUserTimeline({ screen_name: screen_name, count: '1'}, function(err, reponse, body) {
+	twitter.getSearch({ q: 'from:' + screen_name + ' -filter:retweets', count: '100'}, function(err, reponse, body) {
 		logTwitterError(err);
 		channel.send("Une erreur est survenue. Êtes-vous sûr que ce nom d'utilisateur existe..?");
 	}, function(data) {
-		var tweet = JSON.parse(data)[0];
-		if(!checkTweet(tweet)) {
+		var tweet = getLastTweet(JSON.parse(data));
+		if(!tweet) {
 			channel.send("Une erreur est survenue dans la lecture du dernier tweet. L'utilisateur n'a pas été suivi.");
 			return;
 		}
@@ -113,17 +139,17 @@ function listFollowed(channel) {
 function checkForNewTweets(channel) {
 	console.log("Checking for new tweets...");
 	for(user in followedUsers) {
-		twitter.getUserTimeline({ screen_name: user, count: '1'}, function(err, reponse, body) {
+		twitter.getSearch({ q: 'from:' + user + ' -filter:retweets', since_id: followedUsers[user]}, function(err, reponse, body) {
 			logTwitterError(err);
 		}, function(data) {
-			var newTweet = JSON.parse(data)[0];
-			if(!checkTweet(newTweet)) return;
-			var user = newTweet.user.screen_name;
-			if(newTweet.id_str != followedUsers[user]) {
-				linkTweet(newTweet, twitterChan);
-				followedUsers[user] = newTweet.id_str;
-				fs.writeFileSync("followed.json", JSON.stringify(followedUsers));
+			var newTweets = getNewTweets(JSON.parse(data));
+			if(!newTweets || newTweets.length == 0) return;
+
+			for(var i in newTweets) {
+				linkTweet(newTweets[i], twitterChan);
 			}
+			followedUsers[newTweets[0].user.screen_name] = newTweets[0].id_str;
+			fs.writeFileSync("followed.json", JSON.stringify(followedUsers));
 		});
 	}
 }
@@ -152,10 +178,16 @@ client.on('message', message => {
 
 	if (args[0] === "t/last") {
 		if(args.length <= 1 || args[1].length <= 1) return;
-		twitter.getUserTimeline({ screen_name: args[1], count: '1'}, function(err, reponse, body) {
+		twitter.getSearch({ q: 'from:' + args[1] + ' -filter:retweets', count: '100'}, function(err, reponse, body) {
 			logTwitterError(err);
+			twitterChan.send("Une erreur est survenue. Êtes-vous sûr que ce nom d'utilisateur existe..?");
 		}, function(data) {
-			linkTweet(JSON.parse(data)[0], twitterChan);
+			var tweet = getLastTweet(JSON.parse(data));
+			if(!tweet) {
+				twitterChan.send("Une erreur est survenue. Êtes-vous sûr que ce nom d'utilisateur existe..?");
+				return;
+			} 
+			linkTweet(tweet, twitterChan);
 		});
 	}
 
