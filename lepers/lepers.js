@@ -177,6 +177,62 @@ function refreshSpotifyToken() {
 	);
 }
 
+async function pickRandomArtist(genre) {
+	var data = await spotifyApi.searchArtists('genre:'+genre, {limit: 1});
+	console.log(data.body);
+	var total = data.body.artists.total;
+	console.log("total:" + total);
+	var rand = Math.floor(Math.random()*total);
+	console.log("rand:" + rand);
+	data = await spotifyApi.searchArtists('genre:'+genre, {limit: 1, offset: rand})
+	console.log(data.body);
+	return data.body.artists.items[0];
+}
+
+async function pickRandomTrack(genre) {
+	var artist = await pickRandomArtist(genre);
+	writeObj(artist);
+	console.log(artist.name);
+	var data = await spotifyApi.searchTracks('artist:'+artist.name, {limit: 50});
+	var tracks = data.body.tracks.items;
+	var rand = Math.floor(Math.random()*5);
+	var track = tracks[rand];
+	var i = rand;
+	console.log('tracks: '+tracks.length);
+	while(!track.preview_url && ++i < tracks.length) {
+		track = tracks[i];
+	}
+	return track;
+}
+
+async function pickRandomPopularTrack(genre) {
+	var rand = Math.floor(Math.random()*2000);
+	var data = await spotifyApi.searchTracks('genre:'+genre, {limit: 50, offset: rand});
+	var tracks = data.body.tracks.items;
+	for(var i in tracks) {
+		if(tracks[i].preview_url) return tracks[i];
+	}
+	return null;
+}
+
+async function next() {
+	currentTrack = await pickRandomTrack('rock');
+	console.log('New track loaded !');
+	for(var i in currentTrack.artists) writeObj(currentTrack.artists[i]);
+	console.log(currentTrack.name);
+	var dispatcher = voiceConnection.playArbitraryInput(currentTrack.preview_url);
+	setTimeout(() => dispatcher.end(), 4000);
+}
+
+async function nextPopular() {
+	currentTrack = await pickRandomPopularTrack('metal');
+	console.log('New track loaded !');
+	for(var i in currentTrack.artists) writeObj(currentTrack.artists[i]);
+	console.log(currentTrack.name);
+	var dispatcher = voiceConnection.playArbitraryInput(currentTrack.preview_url);
+	setTimeout(() => dispatcher.end(), 4000);
+}
+
 client.on('ready', function() {
 	console.log('ready to work !');
 	welcome();
@@ -194,7 +250,7 @@ client.on('message', message => {
 		return;
 	}
 
-	if (message.content === 'l/join') {
+	if (message.content === 'b/join') {
 		// Only try to join the sender's voice channel if they are in one themselves
 		if (message.member.voiceChannel) {
 		  message.member.voiceChannel.join()
@@ -208,7 +264,7 @@ client.on('message', message => {
 		  message.reply("Vous n'êtes connectés à aucun serveur vocal !");
 		}
 	}
-	else if (message.content === 'l/leave') {
+	else if (message.content === 'b/leave') {
 		if (voiceChannel) {
 			voiceChannel.leave();
 			voiceConnection = null;
@@ -219,31 +275,17 @@ client.on('message', message => {
 		}
 	}	
 	else if (message.content === 'b/next') {
-		spotifyApi.searchTracks('genre:rock')
-			.then(function(data) {
-				console.log(data.body);
-				var tracks = data.body.tracks.items;
-				for(var i in tracks) {
-					if(tracks[i].preview_url) {
-						currentTrack = tracks[i];
-						break;
-					}
-				}
-				/*var rand = Math.floor(Math.random()*tracks.length);
-				console.log(tracks[rand].preview_url);*/
-				/*var dispatcher = voiceConnection.playArbitraryInput(tracks[rand].preview_url);
-				setTimeout(() => dispatcher.end(), 10000);*/
-			}, function(err) {
-				if(err.statusCode == 401) {
-					refreshSpotifyToken();
-				};
-				console.log('Something went wrong!', err);
-			});
-	} else if (message.content === 'b/play') {
-		for(var i in currentTrack.artists) writeObj(currentTrack.artists[i]);
-		console.log(currentTrack.name);
-		/*var dispatcher = voiceConnection.playArbitraryInput(currentTrack.preview_url);
-		setTimeout(() => dispatcher.end(), 10000);*/
+		try {
+			nextPopular();
+		} catch(err) {
+			if(err.statusCode == 401) {
+				refreshSpotifyToken();
+			};
+			console.log('Something went wrong!', err);
+		}
+	} else if (message.content === 'b/play') {		
+		var dispatcher = voiceConnection.playArbitraryInput(currentTrack.preview_url);
+		setTimeout(() => dispatcher.end(), 4000);
 	} else if (message.content === 'l/test') 
 	voiceConnection.playArbitraryInput('http://translate.google.com/translate_tts?ie=UTF-8&q='+encodeURI('tripotte moi la bite')+'&tl=fr&client=tw-ob');
 	else if(message.content === "l/next") {
