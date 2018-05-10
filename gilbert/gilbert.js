@@ -122,7 +122,7 @@ async function nextPopular(genre) {
 
 	if(track) {
 		if(currentTrack) {
-			chan.send('La réponse était '+currentTrack.artists[0].name+' — '+currentTrack.name);
+			chan.send('La réponse était '+formatCorrectAnswer());
 		}
 		currentTrack = track;
 		currentGenre = genre;
@@ -132,9 +132,20 @@ async function nextPopular(genre) {
 	}
 }
 
-function testAnswer(answer, track) {
-	var trackName = track.name.split(" - ")[0].split(" — ")[0].split("(")[0];
+function formatCorrectAnswer() {
+	if(currentGenre === 'soundtrack') return currentTrack.artists[0].name+' — '+currentTrack.album.name+' ('+currentTrack.name+')';
+	return currentTrack.artists[0].name+' — '+currentTrack.name;
+}
+
+function normalizeName(name) {
+	return name.split(" - ")[0].split(" — ")[0].split("(")[0].split(":")[0];
+}
+
+function testAnswer(answer, track, genre) {
+	var trackName = normalizeName(track.name);
+	var albumName = normalizeName(track.album.name);
 	if(quiz.isCorrectAnswer(answer, trackName, 6)) return { answer: track.name, points: 2 };
+	if(genre === "soundtrack" && quiz.isCorrectAnswer(answer, albumName)) return { answer: track.album.name, points: 2 };
 	for(var i in track.artists) {
 		if(quiz.isCorrectAnswer(answer, track.artists[i].name, 6)) return { answer: track.artists[i].name, points: 1 };
 	}
@@ -275,13 +286,13 @@ client.on('message', message => {
 		+'\n\nEt n\'utilisez pas Shazam, hein ! Je vous vois !');
 	} else {
 		if(!currentTrack) return;
-		var eval = testAnswer(message.content, currentTrack);
+		var eval = testAnswer(message.content, currentTrack, currentGenre);
 		if(eval) {
 			if(gilbert) message.react(gilbert);
 			var pointsStr = "";
 			if(eval.points == 1) pointsStr ="Un point !";
 			else if(eval.points == 2) pointsStr = "Deux points, deux !";
-			message.reply('Bien joué, la réponse était bien ' +currentTrack.artists[0].name+' — '+currentTrack.name+' ! '+pointsStr);
+			message.reply('Bien joué, la réponse était bien '+formatCorrectAnswer()+' ! '+pointsStr);
 			increaseScore(message.author.id, currentGenre, eval.points);
 			if(currentDispatcher) {
 				currentDispatcher.end();
