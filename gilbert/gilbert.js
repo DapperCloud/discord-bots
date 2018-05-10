@@ -145,9 +145,9 @@ function playCurrentTrack() {
 	if(!voiceConnection) { chan.send('Je ne peux pas jouer le morceau car je ne suis présent dans aucun salon vocal !'); return; }
 	if(currentDispatcher) { chan.send('Une lecture est déjà en cours'); return; }
 	currentDispatcher = voiceConnection.playArbitraryInput(currentTrack.preview_url, {bitrate: config.bitrate});
-	currentDispatcher.on('start', function() {
+	/*currentDispatcher.on('start', function() {
 		setTimeout(() => { if(currentDispatcher) currentDispatcher.end(); currentDispatcher = null; }, config.previewDuration*1000);	
-	});
+	});*/
 }
 
 client.on('ready', function() {
@@ -217,8 +217,8 @@ client.on('message', message => {
 	else if (args[0] === 'g/next') {
 		try {
 			if(currentDispatcher) {
-				chan.send('Attendez que la leture soit terminée avant de nexter, bande de sauvages');
-				return;
+				currentDispatcher.end();
+				currentDispatcher = null;
 			}
 			var genre = args.length > 1 ? args.slice(1).join(" ") : "rock";
 			nextPopular(genre);
@@ -230,6 +230,11 @@ client.on('message', message => {
 		}
 	} else if (args[0] === 'g/replay') {
 		playCurrentTrack();	
+	} else if (args[0] === 'g/stop') {
+		if(currentDispatcher) {
+			currentDispatcher.end();
+			currentDispatcher = null;
+		}
 	} else if(args[0] === "g/scores") {
 		if(args.length > 1) {
 			var genre = args.slice(1).join(" ") ;
@@ -262,6 +267,7 @@ client.on('message', message => {
 		+'g/leave - Je quitte le salon dans lequel je suis\n'
 		+'g/next [genre] - Sélctionne une musique au hasard et la joue. Vous pouvez préciser un genre spotify ("rock" par défaut)\n'
 		+'g/replay - Rejoue la musique sélectionnée\n'
+		+'g/stop - Arrête la lecture en cours\n'
 		+'g/scores [genre] - Affiche les scores. Vous pouvez préciser un genre pour afficher les scores de celui-ci'
 		+'\n\nEt n\'utilisez pas Shazam, hein ! Je vous vois !');
 	} else {
@@ -269,8 +275,10 @@ client.on('message', message => {
 		var eval = testAnswer(message.content, currentTrack);
 		if(eval) {
 			if(gilbert) message.react(gilbert);
-			if(eval.points == 1) message.reply('Bien joué, l\'artiste était bien '+eval.answer+' ! Un point !');
-			else if(eval.points == 2) message.reply('Bien joué, le titre était bien '+eval.answer+' ! Deux points, deux !');
+			var pointsStr = "";
+			if(eval.points == 1) pointsStr ="Un point !";
+			else if(eval.points == 2) pointsStr = "Deux points, deux !";
+			message.reply('Bien joué, la réponse était bien ' +currentTrack.artists[0].name+' — '+currentTrack.name+' ! '+pointsStr);
 			increaseScore(message.author.id, currentGenre, eval.points);
 			if(currentDispatcher) {
 				currentDispatcher.end();
