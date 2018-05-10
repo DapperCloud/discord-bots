@@ -68,3 +68,7 @@ twitter/followed.json
 
 # chaines de markov de coco
 coco/markov.json
+
+# scores et config de gilbert
+gilbert/scores.json
+gilbert/config.json
