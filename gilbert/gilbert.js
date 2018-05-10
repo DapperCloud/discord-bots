@@ -256,7 +256,7 @@ client.on('message', message => {
 		chan.send(str);
 	} else if(args[0] === "g/help"){
 		chan.send('Sous le soleeeeeeil des tropiiiiiques ! Bienvenue dans notre jeu musical !\n'
-		+'Un point pour le nom de l\'artiste, deux pour le titre de la musique. Le plus rapide gagne !'
+		+'Un point pour le nom de l\'artiste, deux pour le titre de la musique. Le plus rapide gagne !\n'
 		+'\nVoici mes commandes :\n-----------------------\n'
 		+'g/join - Je rejoins ton salon vocal'
 		+'g/leave - Je quitte le salon dans lequel je suis'
