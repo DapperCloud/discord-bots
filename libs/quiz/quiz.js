@@ -52,7 +52,7 @@ var quiz = (function() {
 	this.isCorrectAnswer = function(answer, expected, charactersByMistake) {
 		normalizedAnswer = normalizeAnswer(answer);
 		normalizedExpected = normalizeAnswer(expected);
-		return normalizedExpected.includes(normalizedAnswer) 
+		return normalizedAnswer.includes(normalizedExpected) 
 			|| getEditDistance(normalizedAnswer, normalizedExpected) <= normalizedAnswer.length / charactersByMistake;
 	}
 
