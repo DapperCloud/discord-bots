@@ -60,13 +60,27 @@ function welcome(number) {
 	}
 }
 
-function increaseScore(userId, points) {
-	if(userId in scores) {
-		scores[userId] += points;
-	} else {
-		scores[userId] = points;
-	}
+function increaseScore(userId, genre, points) {
+	if(!(genre in scores)) scores[genre] = {};
+	if(!(userId in scores[genre])) scores[genre][userId] = 0;
+
+	scores[genre][userId] += points;
 	fs.writeFileSync("scores.json", JSON.stringify(scores));
+}
+
+function getOrderedScores(scoresObj) {
+	var tuples = [];
+
+	for (var key in scoresObj) tuples.push([key, scoresObj[key]]);
+
+	tuples.sort(function(a, b) {
+	    a = a[1];
+	    b = b[1];
+
+	    return a < b ? -1 : (a > b ? 1 : 0);
+	});
+
+	return tuples;
 }
 
 function refreshSpotifyToken() {
@@ -111,6 +125,7 @@ async function nextPopular(genre) {
 			chan.send('La réponse était '+currentTrack.artists[0].name+' — '+currentTrack.name);
 		}
 		currentTrack = track;
+		currentGenre = genre;
 		playCurrentTrack();
 	} else {
 		chan.send('Aucun morceau sélectionné. Êtes-vous sûr que le genre "'+genre+'" existe sur Spotify ?');
@@ -156,6 +171,7 @@ client.on('error', function() {
 var voiceConnection;
 var voiceChannel;
 var currentTrack;
+var currentGenre;
 var currentDispatcher;
 
 client.on('message', message => {
@@ -215,21 +231,35 @@ client.on('message', message => {
 	} else if (args[0] === 'g/replay') {
 		playCurrentTrack();	
 	} else if(args[0] === "g/scores") {
-		var str = 'Attention, mesdames et messieurs, ci-dessous le score de nos candidats :\n-----------------------';
-		
-		for(userId in scores) {
-			if(!userId) continue;
-			str += '\n' + chan.guild.members.get(userId).user.username + " - " + scores[userId];
+		if(args.length > 1) {
+			var genre = args.slice(1).join(" ") ;
+			if(!(genre in scores)) {
+				chan.send("Je ne vois pas de scores dans la catégorie "+genre+" !");
+				return;
+			}
+			var scoresToPrint = getOrderedScores(scores[genre]);
+			var str = 'Classement '+genre+' :\n-----------------------';
+		} else {
+			var scoresToPrint = {};
+			for(genre in scores) {
+				for(userId in scores[genre]) {
+					if(!(userId in scoresToPrint)) scoresToPrint[userId] = 0;
+					scoresToPrint[userId] += scores[genre][userId];
+				}
+			}
+			scoresToPrint = getOrderedScores(scoresToPrint);
+			var str = 'Classement général :\n-----------------------';
 		}
-		
-		str += '\n\nCeux qui n\'apparaissent pas n\'ont aucun point ! (tronul)'
+		for(i in scoresToPrint) {
+			str += '\n' + chan.guild.members.get(scoresToPrint[i][0]).user.username + " - " + scoresToPrint[i][1];
+		}
 		chan.send(str);
 	} else if(args[0] === "g/help"){
 		chan.send('Sous le soleeeeeeil des tropiiiiiques ! Bienvenue dans notre jeu musical !\n'
 		+'\nVoici mes commandes :\n-----------------------\n'
-		+'g/next [catégorie] - Sélctionne une musique au hasard et la joue. Vous pouvez préciser une catégorie spotify (rock par défaut)\n'
+		+'g/next [genre] - Sélctionne une musique au hasard et la joue. Vous pouvez préciser un genre spotify ("rock" par défaut)\n'
 		+'g/replay - Rejoue la musique sélectionnée\n'
-		+'g/scores - Affiche les scores'
+		+'g/scores [genre] - Affiche les scores. Vous pouvez préciser un genre pour afficher les scores de celui-ci'
 		+'\n\nEt n\'utilisez pas Shazam, hein ! Je vous vois !');
 	} else {
 		if(!currentTrack) return;
@@ -238,12 +268,13 @@ client.on('message', message => {
 			if(gilbert) message.react(gilbert);
 			if(eval.points == 1) message.reply('Bien joué, l\'artiste était bien '+eval.answer+' ! Un point !');
 			else if(eval.points == 2) message.reply('Bien joué, le titre était bien '+eval.answer+' ! Deux points, deux !');
-			increaseScore(message.author.id, eval.points);
+			increaseScore(message.author.id, currentGenre, eval.points);
 			if(currentDispatcher) {
 				currentDispatcher.end();
 				currentDispatcher = null;
 			}
 			currentTrack = null;
+			currentGenre = null;
 		}
 	}
 	
