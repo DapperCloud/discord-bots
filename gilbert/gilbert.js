@@ -88,18 +88,33 @@ function refreshSpotifyToken() {
 async function pickRandomPopularTrack(genre) {
 	var data = await spotifyApi.searchTracks('genre:'+genre, {limit: 1});
 	var total = data.body.tracks.total;
+	if(total == 0) return null;
 	var rand = Math.floor(Math.random()*Math.min(config.tracksTotal, total));
-	var data = await spotifyApi.searchTracks('genre:'+genre, {limit: 50, offset: rand});
+	data = await spotifyApi.searchTracks('genre:'+genre, {limit: 50, offset: rand});
 	var tracks = data.body.tracks.items;
 	for(var i in tracks) {
 		if(tracks[i].preview_url) return tracks[i];
 	}
-	return null;
+	return tracks[0];
 }
 
-async function nextPopular() {
-	currentTrack = await pickRandomPopularTrack('rock');
-	playCurrentTrack();
+async function nextPopular(genre) {
+	var retry = true;
+	var track = null;
+	while(retry) {
+		track = await pickRandomPopularTrack(genre);
+		retry = track && !track.preview_url;
+	}
+
+	if(track) {
+		if(currentTrack) {
+			chan.send('La réponse était '+currentTrack.artists[0].name+' — '+currentTrack.name);
+		}
+		currentTrack = track;
+		playCurrentTrack();
+	} else {
+		chan.send('Aucun morceau sélectionné. Êtes-vous sûr que le genre "'+genre+'" existe sur Spotify ?');
+	}
 }
 
 function testAnswer(answer, track) {
@@ -111,11 +126,13 @@ function testAnswer(answer, track) {
 }
 
 function playCurrentTrack() {
-	if(!currentTrack) { chan.send('Aucun morceau n\'a été sélectionné !'); return; }
+	if(!currentTrack || !currentTrack.preview_url) { chan.send('Aucun morceau n\'a été sélectionné !'); return; }
 	if(!voiceConnection) { chan.send('Je ne peux pas jouer le morceau car je ne suis présent dans aucun salon vocal !'); return; }
 	if(currentDispatcher) { chan.send('Une lecture est déjà en cours'); return; }
-	currentDispatcher = voiceConnection.playArbitraryInput(currentTrack.preview_url, {bitrate: 96000});
-	setTimeout(() => { if(currentDispatcher) currentDispatcher.end(); currentDispatcher = null; }, config.previewDuration*1000);	
+	currentDispatcher = voiceConnection.playArbitraryInput(currentTrack.preview_url, {bitrate: config.bitrate});
+	currentDispatcher.on('start', function() {
+		setTimeout(() => { if(currentDispatcher) currentDispatcher.end(); currentDispatcher = null; }, config.previewDuration*1000);	
+	});
 }
 
 client.on('ready', function() {
@@ -158,6 +175,12 @@ client.on('message', message => {
 			.then(connection => { // Connection is an instance of VoiceConnection
 			  voiceConnection = connection;
 			  voiceChannel = message.member.voiceChannel;
+
+			  voiceConnection.on('error', function(error) {
+			  	console.log('######### Voice connection error !');
+			  	console.loqg(error);
+			  });
+
 			  message.reply('Connecté !');
 			})
 			.catch(console.log);
@@ -181,7 +204,8 @@ client.on('message', message => {
 				chan.send('Attendez que la leture soit terminée avant de nexter, bande de sauvages');
 				return;
 			}
-			nextPopular();
+			var genre = args.length > 1 ? args.slice(1).join(" ") : "rock";
+			nextPopular(genre);
 		} catch(err) {
 			if(err.statusCode == 401) {
 				refreshSpotifyToken();
@@ -203,7 +227,7 @@ client.on('message', message => {
 	} else if(args[0] === "g/help"){
 		chan.send('Sous le soleeeeeeil des tropiiiiiques ! Bienvenue dans notre jeu musical !\n'
 		+'\nVoici mes commandes :\n-----------------------\n'
-		+'g/next - Sélctionne une musique au hasard et la joue\n'
+		+'g/next [catégorie] - Sélctionne une musique au hasard et la joue. Vous pouvez préciser une catégorie spotify (rock par défaut)\n'
 		+'g/replay - Rejoue la musique sélectionnée\n'
 		+'g/scores - Affiche les scores'
 		+'\n\nEt n\'utilisez pas Shazam, hein ! Je vous vois !');
