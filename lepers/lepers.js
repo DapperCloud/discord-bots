@@ -128,7 +128,7 @@ var currentTrack;
 
 client.on('message', message => {
 	
-	if(message.author.bot || !message.channel == chan) {
+	if(message.author.bot || message.channel.name != chan.name) {
 		return;
 	}
 	if(message.content === "l/question") {
