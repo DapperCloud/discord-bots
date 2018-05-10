@@ -173,7 +173,7 @@ client.on('ready', function() {
 	console.log('ready to work !');
 	welcome();
 	refreshSpotifyToken();
-	setInterval(() => refreshSpotifyToken, 1800*1000); //Refresh every 30 minutes
+	setInterval(() => refreshSpotifyToken(), 1800*1000); //Refresh every 30 minutes
 	chan.send("Hein, j'suis où ? C'est quoi cette musique que j'entends ? Euh, b-… bonjour ?");
 });
 
