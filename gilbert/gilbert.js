@@ -133,7 +133,8 @@ async function nextPopular(genre) {
 }
 
 function testAnswer(answer, track) {
-	if(quiz.isCorrectAnswer(answer, track.name, 6)) return { answer: track.name, points: 2 };
+	var trackName = track.name.split(" - ")[0].split(" — ")[0].split("(")[0];
+	if(quiz.isCorrectAnswer(answer, trackName, 6)) return { answer: track.name, points: 2 };
 	for(var i in track.artists) {
 		if(quiz.isCorrectAnswer(answer, track.artists[i].name, 6)) return { answer: track.artists[i].name, points: 1 };
 	}
