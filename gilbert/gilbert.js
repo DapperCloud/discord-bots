@@ -195,7 +195,7 @@ var currentDispatcher;
 
 client.on('message', message => {
 	
-	if(message.author.bot || !message.channel == chan) {
+	if(message.author.bot || message.channel != chan) {
 		return;
 	}
 
