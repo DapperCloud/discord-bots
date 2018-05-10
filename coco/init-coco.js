@@ -22,6 +22,7 @@ async function parseChannels(channels) {
 	try {
 		for(i in channels) {
 			var chan = channels[i];
+			if(["lepers", "gilbert"].includes(chan.name)) continue;
 			console.log('####### Parsing #'+chan.name+' messages...');
 			var messagesLeft = true;
 			var oldestMessageId = null;
