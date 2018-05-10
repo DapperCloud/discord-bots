@@ -80,7 +80,7 @@ client.on('ready', () => {
 
 client.on('message', message => {
 
-	if(message.author.bot) {
+	if(message.author.bot || ["lepers, gilbert"].includes(message.channel.name)) {
 		return;
 	}
 
