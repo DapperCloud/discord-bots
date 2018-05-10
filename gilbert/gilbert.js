@@ -150,6 +150,13 @@ function playCurrentTrack() {
 	});*/
 }
 
+function stopCurrentTrack() {
+	if(currentDispatcher) {
+		currentDispatcher.end();
+		currentDispatcher = null;
+	}
+}
+
 client.on('ready', function() {
 	console.log('ready to work !');
 	welcome();
@@ -206,6 +213,7 @@ client.on('message', message => {
 	}
 	else if (args[0] === 'g/leave') {
 		if (voiceChannel) {
+			stopCurrentTrack();
 			voiceChannel.leave();
 			voiceConnection = null;
 			voiceChannel = null;
@@ -216,10 +224,7 @@ client.on('message', message => {
 	}	
 	else if (args[0] === 'g/next') {
 		try {
-			if(currentDispatcher) {
-				currentDispatcher.end();
-				currentDispatcher = null;
-			}
+			stopCurrentTrack();
 			var genre = args.length > 1 ? args.slice(1).join(" ") : "rock";
 			nextPopular(genre);
 		} catch(err) {
@@ -231,10 +236,7 @@ client.on('message', message => {
 	} else if (args[0] === 'g/replay') {
 		playCurrentTrack();	
 	} else if (args[0] === 'g/stop') {
-		if(currentDispatcher) {
-			currentDispatcher.end();
-			currentDispatcher = null;
-		}
+		stopCurrentTrack();
 	} else if(args[0] === "g/scores") {
 		if(args.length > 1) {
 			var genre = args.slice(1).join(" ") ;
