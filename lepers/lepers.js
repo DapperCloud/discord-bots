@@ -102,6 +102,21 @@ function increaseScore(userId) {
 	fs.writeFileSync("scores.json", JSON.stringify(scores));
 }
 
+function getOrderedScores(scoresObj) {
+	var tuples = [];
+
+	for (var key in scoresObj) tuples.push([key, scoresObj[key]]);
+
+	tuples.sort(function(a, b) {
+	    a = a[1];
+	    b = b[1];
+
+	    return a < b ? -1 : (a > b ? 1 : 0);
+	});
+
+	return tuples;
+}
+
 client.on('ready', function() {
 	console.log('ready to work !');
 	welcome();
@@ -133,9 +148,10 @@ client.on('message', message => {
 	} else if(message.content === "l/scores") {
 		var str = 'Attention, mesdames et messieurs, ci-dessous le score de nos candidats :\n-----------------------';
 		
-		for(userId in scores) {
-			if(!userId) continue;
-			str += '\n' + chan.guild.members.get(userId).user.username + " - " + scores[userId];
+		var orderedScores = getOrderedScores(scores);
+
+		for(i in orderedScores) {
+			str += '\n' + chan.guild.members.get(orderedScores[i][0]).user.username + " - " + orderedScores[i][1];
 		}
 		
 		str += '\n\nCeux qui n\'apparaissent pas n\'ont aucun point ! (tronul)'
