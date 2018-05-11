@@ -177,16 +177,6 @@ client.on('ready', function() {
 	chan.send("Hein, j'suis où ? C'est quoi cette musique que j'entends ? Euh, b-… bonjour ?");
 });
 
-client.on('error', function() {
-	console.log('cleaning after error !');
-	if(currentDispatcher) currentDispatcher.end();
-	if(voiceChannel) voiceChannel.leave();
-	voiceConnection = null;
-	voiceChannel = null;
-	currentTrack = null;
-	currentDispatcher = null;
-});
-
 var voiceConnection;
 var voiceChannel;
 var currentTrack;
