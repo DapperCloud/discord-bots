@@ -1,6 +1,9 @@
 # executables
 *.exe
 
+#DS_STORE
+*.DS_STORE
+
 # Logs
 logs
 *.log
