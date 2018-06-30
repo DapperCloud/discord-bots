@@ -4,7 +4,7 @@ var natural = require('natural'),
 	util = require("util");
 
 var DiscordTokenizerFr = function() {
-    this._pattern = new RegExp(/(\^\^|(\:|x)\-?[\\\(\)\/\|pPoODxX3]|\<\@\!?[0-9]+\>|\<\a?:[a-zA-Z]+\:[0-9]+\>|['a-zA-Z0-9äâàéèëêïîöôùüûœæçÄÂÀÉÈËÊÏÎÖÔÙÜŒÆÇ\-+_]+|( *\. *)+|( *\, *)+|( *[!?] *)+|( *\" *)+)/g);
+    this._pattern = new RegExp(/(\^\^|(\:|x)\-?[\\\(\)\/\|pPoODxX3]|\<.*[0-9]+\>|\<\a?\:[^:]+\:[0-9]+\>|['a-zA-Z0-9äâàéèëêïîöôùüûœæçÄÂÀÉÈËÊÏÎÖÔÙÜŒÆÇ\-+_]+|( *\. *)+|( *\, *)+|( *[!?] *)+|( *\" *)+)/g);
     natural.RegexpTokenizer.call(this,{gaps: false});
 };
 
