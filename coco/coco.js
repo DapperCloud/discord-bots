@@ -47,19 +47,22 @@ function generateForUser(id) {
 	var prefix = EMPTY;
 	var text = "";
 	var count = 0;
+	var sentenceWords = 0;
 	while(count++ < 150) {
 		var previous = suffix;
-		var suffix = chain.next(prefix);
+		var suffix = sentenceWords++ < 6 ? chain.next(prefix, "") : chain.next(prefix);
 		//console.log(suffix);
 		if(!suffix || suffix == "") {
-			if (count > 10) break; //If we have at least 10 tokens, we stop here
+			if (count > 15) break; //If we have at least 15 tokens, we stop here
 			//New sentence
 			if(!previous.match(/\.+|[?!]+/)) text += ".";
 			previous = ".";
 			prefix = EMPTY;
+			sentenceWords = 0;
 			continue;
 		}
 		text += (count>1 && !suffix.match(/^(\,|\.+|\')$/) && previous != "'" ? " " : "") + suffix;
+		if(suffix.match(/(!|\?)+|\.+/)) sentenceWords = 0;
 		prefix = [prefix[1], suffix];
 	}
 

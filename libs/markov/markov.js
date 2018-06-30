@@ -12,7 +12,7 @@ var markov = (function() {
 		}
 
 		//Picks a random suffix
-		this.next = function(prefix) {
+		this.next = function(prefix, ignoreSuffix) {
 			//console.log("call next from "+prefix);
 			if(!(prefix in this.nodes)) return null;
 			var suffixes = this.nodes[prefix];
@@ -21,7 +21,11 @@ var markov = (function() {
 
 			var tuples = [];
 
-			for (var key in suffixes) tuples.push([key, suffixes[key]]);
+			for (var key in suffixes) {
+				if(ignoreSuffix == null || ignoreSuffix == undefined || key != ignoreSuffix) {
+					tuples.push([key, suffixes[key]]);
+				}				
+			}
 
 			tuples.sort(function(a, b) {
 			    a = a[1];
