@@ -59,7 +59,7 @@ function generateForUser(id) {
 			prefix = EMPTY;
 			continue;
 		}
-		text += (count>1 && !suffix.match(/\,|\.+|\'/) && previous != "'" ? " " : "") + suffix;
+		text += (count>1 && !suffix.match(/^(\,|\.+|\')$/) && previous != "'" ? " " : "") + suffix;
 		prefix = [prefix[1], suffix];
 	}
 
