@@ -50,6 +50,7 @@ function generateForUser(id) {
 	var sentenceWords = 0;
 	while(count++ < 150) {
 		var previous = suffix;
+		prefix = prefix.map(str => str.toLowerCase());
 		var suffix = sentenceWords++ < 6 ? chain.next(prefix, "") : chain.next(prefix);
 		//console.log(suffix);
 		if(!suffix || suffix == "") {
@@ -62,7 +63,7 @@ function generateForUser(id) {
 			continue;
 		}
 		text += (count>1 && !suffix.match(/^(\,|\.+|\')$/) && previous != "'" ? " " : "") + suffix;
-		if(suffix.match(/(!|\?)+|\.+/)) sentenceWords = 0;
+		if(suffix.match(/(\!|\?)+|\.+/)) sentenceWords = 0;
 		prefix = [prefix[1], suffix];
 	}
 
