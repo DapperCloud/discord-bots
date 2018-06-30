@@ -29,6 +29,6 @@ module.exports.parseMessage = function(message, chain) {
 	var trigrams = NGrams.ngrams(tokens, 3, "");
 	trigrams = trigrams.filter(t => t.length == 3);
 	for(var i=0; i < trigrams.length; i++) {
-		chain.addTransition(trigrams[i].slice(0,2).map(str => str.toLowerCase()), trigrams[i][2]);
+		chain.addTransition(trigrams[i].slice(0,2).map(str => str.toLowerCase().trim()), trigrams[i][2].trim());
 	}
 }
