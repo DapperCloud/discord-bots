@@ -4,11 +4,6 @@ const Discord = require('discord.js');
 const client = new Discord.Client();
 var fs = require("fs");
 
-console.log("Parsing des credentials...");
-var contents = fs.readFileSync("mdp.json");
-var passJson = JSON.parse(contents);
-console.log("OK !");
-
 function writeObj(obj, message) {
   if (!message) { message = obj; }
   var details = "*****************" + "\n" + message + "\n";
@@ -23,36 +18,16 @@ function writeObj(obj, message) {
   console.log(details);
 }
 
-require('jsdom/lib/old-api').env("", function(err, window) {
-    if (err) {
-        console.error(err);
-        return;
-    }
+console.log("Parsing des credentials...");
+var contents = fs.readFileSync("mdp.json");
+var passJson = JSON.parse(contents);
+console.log("OK !");
 
-    var $ = require("jquery")(window);
+console.log("Parsing des quotes.json");
+var contents = fs.readFileSync("quotes.json");
+var quotes = JSON.parse(contents);
+console.log("OK !");
 
-    XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
-
-	$.support.cors = true;
-	$.ajaxSettings.xhr = function() {
-		return new XMLHttpRequest();
-	};
-	
-	quotes = [];
-	$.ajax({ url: 'https://fr.wikiquote.org/wiki/La_Classe_américaine'
-		, success: function(data) { 
-			console.log("Chargement ajax depuis wikiquote OK !");
-			$(data).find('.citation').each(function(i) {
-				quotes.push(this.textContent);
-			});
-			console.log(quotes.length + " quotes chargées avec succès !");
-		}, error: function(xhr, statusText, thrownError) {
-			writeObj(xhr);
-			console.log(statusText);
-			writeObj(thrownError);
-		}});
-});
-	
 client.on('ready', () => {
 	console.log('Ready to work!');
 	abitbol = client.emojis.find("name", "abitbol");
